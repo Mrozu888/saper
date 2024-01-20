@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>saper</title>
+    <style>
+        * {
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        input {
+            display: block;
+            margin: 20px auto;
+        }
+
+        #main {
+            position: relative;
+            height: 100vh;
+        }
+
+        .cell {
+            position: relative;
+            border: 1px solid black;
+            width: 18px;
+            height: 18px;
+            background-color: lightgray;
+            float: left;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        img {
+            width: 18px;
+            height: 18px;
+        }
+    </style>
+</head>
+
+<body oncontextmenu="event.preventDefault()">
+    <div id="form">
+        <input type="text" id="gameWidth">
+        <input type="text" id="gameHeight">
+        <input type="text" id="gameBombs">
+        <input type="submit" onclick="game.startGame()" value="Zacznij gre">
+    </div>
+    <div id="main">
+        <center>
+            <div id="bombsCount">Bombs: </div>
+        </center>
+
+    </div>
+
+    <script>
+
+        var game = {
+            //start gry
+            startGame: function () {
+                boardWidth = parseInt(document.getElementById("gameWidth").value);
+                boardHeight = parseInt(document.getElementById("gameHeight").value);
+                bombs = parseInt(document.getElementById("gameBombs").value);
+                openPlates = 0;
+                allPlates = boardWidth * boardHeight;
+
+
+                this.generateTable()
+                this.renderBoard()
+                this.generateBombs()
+                this.generateNumbers()
+                this.click()
+                this.bombsCounter();
+                console.table(table)
+            },
+            // generwoanie tablicy
+            generateTable: function () {
+                table = [];
+                for (i = 0; i < boardHeight + 2; i++) {
+                    table[i] = [];
+                    for (j = 0; j < boardWidth + 2; j++) {
+                        if (i > 0 && i < boardHeight + 1 && j > 0 && j < boardWidth + 1)
+                            table[i][j] = {
+                                number: null,
+                                state: "klepa",
+                                c: 0
+                            };
+                        else
+                            table[i][j] = {
+                                number: "empty",
+                                state: "open",
+                                c: 0
+                            };
+                    }
+                }
+            },
+            // renderowanie planszy
+            renderBoard: function () {
+                if (document.getElementById("board"))
+                    document.getElementById("board").remove()
+                var main = document.getElementById("main")
+                var board = document.createElement("div")
+                board.id = "board"
+                board.style.width = 20 * boardWidth + "px"
+                board.style.height = 20 * boardHeight + "px"
+                for (let i = 1; i < boardHeight + 1; i++) {
+                    for (let j = 1; j < boardWidth + 1; j++) {
+                        var cell = document.createElement("div")
+                        cell.classList.add("cell")
+                        cell.id = i + "_" + j
+                        var image = document.createElement("img")
+                        image.id = i + "img" + j
+                        image.setAttribute("src", "img/klepa.PNG")
+                        cell.appendChild(image)
+                        board.appendChild(cell)
+                    }
+                }
+                main.appendChild(board)
+            },
+            // aktualizacja planszy
+            updateBoard: function () {
+                for (let i = 1; i < boardHeight + 1; i++) {
+                    for (let j = 1; j < boardWidth + 1; j++) {
+                        var cell = document.getElementById(i + "_" + j)
+                        var image = document.getElementById(i + "img" + j)
+                        if (table[i][j].state != "open" && image) {
+                            image.setAttribute("src", "img/" + table[i][j].state + ".PNG")
+                        }
+                    }
+                }
+            },
+            //generowanie bomb
+            generateBombs: function () {
+                for (let i = 0; i < bombs; i++) {
+                    var x = this.getRandomInt(1, boardWidth)
+                    var y = this.getRandomInt(1, boardHeight)
+                    while (table[y][x].number == 0) {
+                        x = this.getRandomInt(1, boardWidth)
+                        y = this.getRandomInt(1, boardHeight)
+                    }
+                    table[y][x].number = 0
+                }
+            },
+            // generowanie liczb dookola bomb
+            generateNumbers: function () {
+                for (let i = 1; i < boardHeight + 1; i++) {
+                    for (let j = 1; j < boardWidth + 1; j++) {
+                        if (table[i][j].number != 0) {
+                            var cell = document.getElementById(i + "_" + j)
+                            var bombCount = 0
+                            for (let a = i - 1; a < i + 2; a++) {
+                                for (let b = j - 1; b < j + 2; b++) {
+                                    if (table[a][b].number == 0) {
+                                        bombCount++
+                                    }
+                                }
+                            }
+                            if (bombCount > 0) {
+                                table[i][j].number = bombCount
+                            }
+                        }
+                    }
+                }
+            },
+            // funkcja random
+            getRandomInt: function (min, max) {
+                min = Math.ceil(min);
+                max = Math.floor(max);
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            },
+            // odkrywanie pozostałych klepek
+            clickOthers: function (i, j) {
+                let cell = document.getElementById(i + "_" + j);
+                if (table[i][j].number == null && table[i][j].state != "open") {
+                    table[i][j].state = "open";
+                    cell.innerText = table[i][j].number;
+                    this.clickOthers(i, j - 1);
+                    this.clickOthers(i, j + 1);
+                    this.clickOthers(i - 1, j);
+                    this.clickOthers(i + 1, j);
+                    this.clickOthers(i - 1, j + 1);
+                    this.clickOthers(i - 1, j - 1);
+                    this.clickOthers(i + 1, j + 1);
+                    this.clickOthers(i + 1, j - 1);
+                }
+                else if (table[i][j].number != "empty" && table[i][j].state != "open") {
+                    cell.innerText = table[i][j].number;
+                    table[i][j].state = "open";
+                }
+                this.updateBoard()
+            },
+            // trafienie na bombe
+            stepOnBomb: function (i, j) {
+                var cell = document.getElementById(i + "_" + j)
+                for (let a = 1; a < boardHeight + 1; a++) {
+                    for (let b = 1; b < boardWidth + 1; b++) {
+                        document.getElementById(a + "_" + b).onclick = () => { return false };
+                        document.getElementById(a + "_" + b).oncontextmenu = () => { return false };
+                        if (table[a][b].number == 0) {
+                            table[a][b].state = "pbomb";
+                        }
+                    }
+                    table[i][j].state = "bomb"
+                }
+                this.updateBoard()
+            },
+            // funkcje klikania w klepki
+            click: function () {
+                for (let i = 1; i < boardHeight + 1; i++) {
+                    for (let j = 1; j < boardWidth + 1; j++) {
+                        let cell = document.getElementById(i + "_" + j);
+                        cell.onclick = () => {
+                            if (table[i][j].number == null) {
+                                this.clickOthers(i, j);
+                            }
+                            else if (table[i][j].number == 0) {
+                                this.stepOnBomb(i, j);
+                            }
+                            else {
+                                table[i][j].state = "open";
+                                cell.innerText = table[i][j].number;
+                            }
+                            this.win()
+                        }
+                        cell.oncontextmenu = () => {
+                            if (table[i][j].state != "open") {
+                                table[i][j].c++
+                                if (table[i][j].c == 3) {
+                                    table[i][j].c = 0;
+                                }
+                                if (table[i][j].c == 0) {
+                                    table[i][j].state = "klepa";
+                                }
+                                if (table[i][j].c == 1) {
+                                    table[i][j].state = "flaga";
+                                }
+                                if (table[i][j].c == 2) {
+                                    table[i][j].state = "pyt";
+                                }
+                            }
+                            this.updateBoard()
+                            this.bombsCounter();
+                        }
+                    }
+                }
+            },
+            // sprawdzenie czy gracz wygral
+            win: function () {
+                openPlates = 0
+                for (let i = 1; i < boardHeight + 1; i++) {
+                    for (let j = 1; j < boardWidth + 1; j++) {
+                        if (table[i][j].state == "open") {
+                            openPlates++;
+                        }
+                    }
+                }
+                if (openPlates == allPlates - bombs) {
+                    setTimeout(() => {
+                        alert("Wygrał");
+                    }, 100);
+                }
+            },
+            bombsCounter: function () {
+                let counter = document.getElementById("bombsCount")
+                counter.innerText = "Bombs: " + (bombs)
+            }
+
+
+        }
+
+    </script>
+</body>
+
+</html>
