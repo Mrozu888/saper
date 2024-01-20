@@ -1,5 +1,6 @@
 ### Saper
 ## Proste odwzorowanie gry saper
+![gra](./saper.PNG)
 # W inputach podajemy:
 1. Szerkość
 2. Wysokość
